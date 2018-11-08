@@ -16,6 +16,35 @@ matrix forward_maxpool_layer(layer l, matrix in)
     matrix out = make_matrix(in.rows, outw*outh*l.channels);
 
     // TODO: 6.1 - iterate over the input and fill in the output with max values
+    int w_i, h_i, im_i, c_i, x, y;
+    int start = (l.size - 1) / 2;
+    for (im_i = 0; im_i < in.rows; im_i++) {
+        float *im_i_data = &in.data[im_i * in.cols];
+        float *out_im_i_data = &out.data[im_i * out.cols];
+        for (c_i = 0; c_i < l.channels; c_i++) {
+            float *chan_i = &im_i_data[c_i * l.height * l.width];
+            float *out_chan_i = &out_im_i_data[c_i * outh * outw];
+            for (h_i = -start; h_i < l.height - start; h_i += l.stride) { // runs outh times
+                for (w_i = -start; w_i < l.width - start; w_i += l.stride) { // runs outw times
+                    float max = -FLT_MAX;
+                    for (x = 0; x < l.size; x++) {
+                        for (y = 0; y < l.size; y++) {
+                            int col = x + w_i;
+                            int row = y + h_i;
+                            if (col < 0 || row < 0 || col >= l.width || row >= l.height) {
+                                continue;
+                            }
+                            float curr = chan_i[row * l.width + col];
+                            max = curr > max ? curr : max;
+                        }
+                    }
+                    int curr_out_col = (w_i + start) / l.stride;
+                    int curr_out_row = (h_i + start) / l.stride;
+                    out_chan_i[curr_out_row * outw + curr_out_col] = max;
+                }
+            }
+        }
+    }
 
     l.in[0] = in;
     free_matrix(l.out[0]);
@@ -40,7 +69,43 @@ void backward_maxpool_layer(layer l, matrix prev_delta)
     // TODO: 6.2 - find the max values in the input again and fill in the
     // corresponding delta with the delta from the output. This should be
     // similar to the forward method in structure.
-
+    int w_i, h_i, im_i, c_i, x, y;
+    int start = (l.size - 1) / 2;
+    for (im_i = 0; im_i < in.rows; im_i++) {
+        float *im_i_data = &in.data[im_i * in.cols];
+        float *prev_delta_im_i_data = &prev_delta.data[im_i * prev_delta.cols];
+        float *delta_im_i_data = &delta.data[im_i * delta.cols];
+        for (c_i = 0; c_i < l.channels; c_i++) {
+            float *chan_i = &im_i_data[c_i * l.height * l.width];
+            float *prev_delta_chan_i = &prev_delta_im_i_data[c_i * l.height * l.width];
+            float *delta_chan_i = &delta_im_i_data[c_i * outh * outw];
+            for (h_i = -start; h_i < l.height - start; h_i += l.stride) { // runs outh times
+                for (w_i = -start; w_i < l.width - start; w_i += l.stride) { // runs outw times
+                    float max = -FLT_MAX;
+                    int max_col = -1;
+                    int max_row = -1;
+                    for (x = 0; x < l.size; x++) {
+                        for (y = 0; y < l.size; y++) {
+                            int col = x + w_i;
+                            int row = y + h_i;
+                            if (col < 0 || row < 0 || col >= l.width || row >= l.height) {
+                                continue;
+                            }
+                            float curr = chan_i[row * l.width + col];
+                            if (curr > max) {
+                                max = curr;
+                                max_col = col;
+                                max_row = row;
+                            }
+                        }
+                    }
+                    int curr_out_col = (w_i + start) / l.stride;
+                    int curr_out_row = (h_i + start) / l.stride;
+                    prev_delta_chan_i[max_row * l.width + max_col] += delta_chan_i[curr_out_row * outw + curr_out_col];
+                }
+            }
+        }
+    }
 }
 
 // Update maxpool layer

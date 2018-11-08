@@ -23,6 +23,17 @@ matrix variance(matrix x, matrix m, int spatial)
 {
     matrix v = make_matrix(1, x.cols/spatial);
     // TODO: 7.1 - calculate variance
+    int i, j;
+    for(i = 0; i < x.rows; ++i){
+        for(j = 0; j < x.cols; ++j){
+            float diff = (x.data[i*x.cols + j] - m.data[j/spatial]);
+            v.data[j/spatial] += (diff * diff);
+        }
+    }
+    for(i = 0; i < m.cols; ++i){
+        v.data[i] = m.data[i] / x.rows / spatial;
+    }
+
     return v;
 }
 
@@ -30,6 +41,18 @@ matrix normalize(matrix x, matrix m, matrix v, int spatial)
 {
     matrix norm = make_matrix(x.rows, x.cols);
     // TODO: 7.2 - normalize array, norm = (x - mean) / sqrt(variance + eps)
+    int i, j, chan;
+    for(i = 0; i < x.rows; ++i){
+        for (chan = 0; chan < x.cols / spatial; chan++) {
+            float std_dev = sqrtf(v.data[chan]);
+            float mean = m.data[chan];
+            for (int j = 0; j < spatial; j++) {
+                int idx = i * x.cols + chan * spatial + j;
+                norm.data[idx] = (x.data[idx] - mean) / std_dev;
+            }
+        }
+    }
+
     return norm;
     
 }

@@ -50,6 +50,40 @@ matrix im2col(image im, int size, int stride)
 
     // TODO: 5.1 - fill in the column matrix
 
+    // padding = size / 2 (integer division)
+    // if size is ODD:
+    //   start at (-padding, -padding)
+    //   end at (im.c - padding, im.w - padding)
+    // if size is EVEN:
+    //   start at (-(padding - 1), -(padding - 1))
+    //   end at (im.c - (padding - 1), im.w - (padding - 1))
+    int w_i, h_i, c_i, x, y;
+    float *col_channel_i;
+    float *im_channel_i;
+    // start is the value corresponding to the start and end points depending on filter size
+    // The padding size is simply size / 2
+    int start = (size - 1) / 2;
+
+    for (c_i = 0; c_i < im.c; c_i++) {
+        im_channel_i = &im.data[(c_i * im.w * im.h)];
+        col_channel_i = &col.data[(c_i * cols * size * size)];
+        for (h_i = -start; h_i < im.h - start; h_i += stride) { // runs outh times
+            for (x = 0; x < size; x++) {
+                for (y = 0; y < size; y++) {
+                    for (w_i = -start + y; w_i < im.w - start + y; w_i += stride) { // runs outw times
+                        float im_data_point;
+                        if ((h_i + x) < 0 || w_i < 0 || w_i >= im.w || (h_i + x) >= im.h) {
+                            im_data_point = 0;
+                        } else {
+                            im_data_point = im_channel_i[((h_i + x) * im.w) + w_i];
+                        }
+                        col_channel_i[(x * size + y) * cols + ((h_i + start) / stride * outw) + (w_i + start - y) / stride] = im_data_point;
+                    }
+                }
+            }
+        }
+    }
+
     return col;
 }
 
@@ -66,7 +100,27 @@ void col2im(matrix col, int size, int stride, image im)
     int cols = outw * outh;
 
     // TODO: 5.2 - add values into image im from the column matrix
+    int w_i, h_i, c_i, x, y;
+    int start = (size - 1) / 2;
+    float *col_channel_i;
+    float *im_channel_i;
 
+    for (c_i = 0; c_i < im.c; c_i++) {
+        im_channel_i = &im.data[(c_i * im.w * im.h)];
+        col_channel_i = &col.data[(c_i * cols * size * size)];
+        for (h_i = -start; h_i < im.h - start; h_i += stride) { // runs outh times
+            for (x = 0; x < size; x++) {
+                for (y = 0; y < size; y++) {
+                    for (w_i = -start + y; w_i < im.w - start + y; w_i += stride) { // runs outw times
+                        if ((h_i + x) < 0 || w_i < 0 || w_i >= im.w || (h_i + x) >= im.h) {
+                            continue;
+                        }
+                        im_channel_i[((h_i + x) * im.w) + w_i] += col_channel_i[(x * size + y) * cols + ((h_i + start) / stride * outw) + (w_i + start - y) / stride];
+                    }
+                }
+            }
+        }
+    }
 }
 
 // Run a convolutional layer on input
@@ -88,6 +142,10 @@ matrix forward_convolutional_layer(layer l, matrix in)
         }
         free_matrix(x);
         free_matrix(wx);
+    }
+    if(l.batchnorm){
+        matrix xnorm = batch_normalize_forward(l, out);
+        out = xnorm;
     }
     forward_convolutional_bias(out, l.b);
     activate_matrix(out, l.activation);
@@ -151,6 +209,12 @@ void backward_convolutional_layer(layer l, matrix prev_delta)
 void update_convolutional_layer(layer l, float rate, float momentum, float decay)
 {
     // TODO: 5.3 Update the weights, similar to the connected layer.
+    axpy_matrix(-decay, l.w, l.dw);
+    axpy_matrix(rate, l.dw, l.w);
+    scal_matrix(momentum, l.dw);
+
+    axpy_matrix(rate, l.db, l.b);
+
 }
 
 // Make a new convolutional layer
@@ -179,6 +243,9 @@ layer make_convolutional_layer(int w, int h, int c, int filters, int size, int s
     l.forward  = forward_convolutional_layer;
     l.backward = backward_convolutional_layer;
     l.update   = update_convolutional_layer;
+    l.x = calloc(1, sizeof(matrix));
+    l.rolling_mean = make_matrix(1, c);
+    l.rolling_variance = make_matrix(1, c); 
     return l;
 }
 
