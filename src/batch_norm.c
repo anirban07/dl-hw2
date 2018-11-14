@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <assert.h>
 #include <math.h>
+#include <float.h>
 
 matrix mean(matrix x, int spatial)
 {
@@ -48,7 +49,7 @@ matrix normalize(matrix x, matrix m, matrix v, int spatial)
             float mean = m.data[chan];
             for (int j = 0; j < spatial; j++) {
                 int idx = i * x.cols + chan * spatial + j;
-                norm.data[idx] = (x.data[idx] - mean) / std_dev;
+                norm.data[idx] = (x.data[idx] - mean) / (std_dev + FLT_EPSILON);
             }
         }
     }
