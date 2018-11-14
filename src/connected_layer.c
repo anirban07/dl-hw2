@@ -91,10 +91,12 @@ void update_connected_layer(layer l, float rate, float momentum, float decay)
 {
     // TODO
     axpy_matrix(-decay, l.w, l.dw);
+    
     axpy_matrix(rate, l.dw, l.w);
     scal_matrix(momentum, l.dw);
 
     axpy_matrix(rate, l.db, l.b);
+    scal_matrix(momentum, l.db);
 
 }
 
