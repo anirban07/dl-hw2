@@ -133,7 +133,7 @@ matrix delta_batch_norm(matrix d, matrix dm, matrix dv, matrix mean, matrix vari
                 int curr_idx = i * x.cols + chan * spatial + j;
                 dx.data[curr_idx] = (d.data[curr_idx] / sqrtf(curr_variance + FLT_EPSILON)) +
                                     (dv.data[chan] * (2 / x.rows / spatial) * (x.data[curr_idx] - curr_mean)) +
-                                    (dm.data[curr_idx] * (1 / x.rows / spatial));
+                                    (dm.data[chan] * (1 / x.rows / spatial));
             }
         } 
     }
