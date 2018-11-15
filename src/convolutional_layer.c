@@ -172,6 +172,11 @@ void backward_convolutional_layer(layer l, matrix prev_delta)
 
     gradient_matrix(out, l.activation, delta);
     backward_convolutional_bias(delta, l.db);
+    if (l.batchnorm) {
+        matrix dx = batch_normalize_backward(l, delta);
+        free_matrix(delta);
+        l.delta[0] = delta = dx;
+    }
     int i;
     matrix wt = transpose_matrix(l.w);
     for(i = 0; i < in.rows; ++i){
@@ -244,8 +249,8 @@ layer make_convolutional_layer(int w, int h, int c, int filters, int size, int s
     l.backward = backward_convolutional_layer;
     l.update   = update_convolutional_layer;
     l.x = calloc(1, sizeof(matrix));
-    l.rolling_mean = make_matrix(1, c);
-    l.rolling_variance = make_matrix(1, c); 
+    l.rolling_mean = make_matrix(1, filters);
+    l.rolling_variance = make_matrix(1, filters); 
     return l;
 }
 

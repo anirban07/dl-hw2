@@ -48,6 +48,13 @@ layer make_maxpool_layer(int w, int h, int c, int size, int stride);
 matrix batch_normalize_forward(layer l, matrix x);
 matrix batch_normalize_backward(layer l, matrix d);
 
+matrix mean(matrix x, int spatial);
+matrix variance(matrix x, matrix m, int spatial);
+matrix normalize(matrix x, matrix m, matrix v, int spatial);
+matrix delta_mean(matrix d, matrix variance, int spatial);
+matrix delta_variance(matrix d, matrix x, matrix mean, matrix variance, int spatial);
+matrix delta_batch_norm(matrix d, matrix dm, matrix dv, matrix mean, matrix variance, matrix x, int spatial);
+
 typedef struct {
     layer *layers;
     int n;

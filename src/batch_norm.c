@@ -27,12 +27,11 @@ matrix variance(matrix x, matrix m, int spatial)
     int i, j;
     for(i = 0; i < x.rows; ++i){
         for(j = 0; j < x.cols; ++j){
-            float diff = (x.data[i*x.cols + j] - m.data[j/spatial]);
-            v.data[j/spatial] += (diff * diff);
+            v.data[j/spatial] += powf(x.data[i*x.cols + j] - m.data[j/spatial], 2);
         }
     }
-    for(i = 0; i < m.cols; ++i){
-        v.data[i] = m.data[i] / x.rows / spatial;
+    for(i = 0; i < v.cols; ++i){
+        v.data[i] = v.data[i] / x.rows / spatial;
     }
 
     return v;
@@ -45,11 +44,11 @@ matrix normalize(matrix x, matrix m, matrix v, int spatial)
     int i, j, chan;
     for(i = 0; i < x.rows; ++i){
         for (chan = 0; chan < x.cols / spatial; chan++) {
-            float std_dev = sqrtf(v.data[chan]);
+            float std_dev = sqrtf(v.data[chan] + FLT_EPSILON);
             float mean = m.data[chan];
-            for (int j = 0; j < spatial; j++) {
+            for (j = 0; j < spatial; j++) {
                 int idx = i * x.cols + chan * spatial + j;
-                norm.data[idx] = (x.data[idx] - mean) / (std_dev + FLT_EPSILON);
+                norm.data[idx] = (x.data[idx] - mean) / std_dev;
             }
         }
     }
@@ -90,6 +89,16 @@ matrix delta_mean(matrix d, matrix variance, int spatial)
 {
     matrix dm = make_matrix(1, variance.cols);
     // TODO: 7.3 - calculate dL/dmean
+    int i, j;
+    for (i = 0; i < d.rows; i++) {
+        for (j = 0; j < d.cols; j++) {
+            dm.data[j/spatial] += d.data[i * d.cols + j];
+        }
+    }
+    for (i = 0; i < dm.cols; i++) {
+        dm.data[i] *= -1 / sqrtf(variance.data[i] + FLT_EPSILON);
+    }
+
     return dm;
 }
 
@@ -97,6 +106,16 @@ matrix delta_variance(matrix d, matrix x, matrix mean, matrix variance, int spat
 {
     matrix dv = make_matrix(1, variance.cols);
     // TODO: 7.4 - calculate dL/dvariance
+    int i, j;
+    for (i = 0; i < d.rows; i++) {
+        for (j = 0; j < d.cols; j++) {
+            int curr_idx = i * d.cols + j;
+            dv.data[j/spatial] += d.data[curr_idx] * (x.data[curr_idx] - mean.data[j/spatial]);
+        }
+    }
+    for (i = 0; i < dv.cols; i++) {
+        dv.data[i] = dv.data[i] * -0.5 * powf(variance.data[i] + FLT_EPSILON, -1.5);
+    }
     return dv;
 }
 
@@ -105,6 +124,19 @@ matrix delta_batch_norm(matrix d, matrix dm, matrix dv, matrix mean, matrix vari
     int i, j;
     matrix dx = make_matrix(d.rows, d.cols);
     // TODO: 7.5 - calculate dL/dx
+    int chan;
+    for (i = 0; i < x.rows; i++) {
+        for (chan = 0; chan < x.cols / spatial; chan++) {
+            float curr_mean = mean.data[chan];
+            float curr_variance = variance.data[chan];
+            for (j = 0; j < spatial; j++) {
+                int curr_idx = i * x.cols + chan * spatial + j;
+                dx.data[curr_idx] = (d.data[curr_idx] / sqrtf(curr_variance + FLT_EPSILON)) +
+                                    (dv.data[chan] * (2 / x.rows / spatial) * (x.data[curr_idx] - curr_mean)) +
+                                    (dm.data[curr_idx] * (1 / x.rows / spatial));
+            }
+        } 
+    }
     return dx;
 }
 

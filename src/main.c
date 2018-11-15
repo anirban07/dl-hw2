@@ -17,6 +17,8 @@ void try_mnist()
     //n.layers[0] = make_connected_layer(784, 32, LRELU);
     n.layers[0] = make_convolutional_layer(28, 28, 1, 1, 5, 2, LRELU);
     n.layers[1] = make_convolutional_layer(14, 14, 1, 8, 5, 2, LRELU);
+    n.layers[0].batchnorm = 1;
+    n.layers[1].batchnorm = 1;
     n.layers[2] = make_connected_layer(392, 10, SOFTMAX);
 
     int batch = 128;

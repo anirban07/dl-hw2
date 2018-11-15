@@ -294,16 +294,60 @@ void test_matrix_speed()
     printf("Transpose elapsed %lf sec\n", what_time_is_it_now() - start);
 }
 
+void bn_forward() {
+    int b = 2;
+    float in_data[] = {
+        1,2,3,4,5,6,
+        7,8,9,10,11,12
+    };
+    int dim = 6;
+    int spatial = 2;
+    matrix x = make_matrix(b, dim);
+    x.data = in_data;
+
+    matrix mean_mat = mean(x, spatial);
+    matrix variance_mat = variance(x, mean_mat, spatial);
+    matrix norm = normalize(x, mean_mat, variance_mat, spatial);
+
+    printf("Printing original data \n");
+    print_matrix(x);
+    printf("Printing mean matrix with spatial %d \n", spatial);
+    print_matrix(mean_mat);
+    printf("Printing variance matrix with spatial %d \n", spatial);
+    print_matrix(variance_mat);
+    printf("Printing normalize matrix with spatial %d \n", spatial);
+    print_matrix(norm);
+    float d_in[] = {
+        1,1,1,1,1,1,
+        1,1,1,1,1,1
+    };
+
+    matrix d_mat = make_matrix(b, dim);
+    d_mat.data = d_in;
+    matrix d_mean = delta_mean(d_mat, variance_mat, spatial);
+    matrix d_var = delta_variance(d_mat, x, mean_mat, variance_mat, spatial);
+    matrix d_bn = delta_batch_norm(d_mat, d_mean, d_var, mean_mat, variance_mat, x, spatial);
+
+
+    printf("Printing dmean with spatial %d \n", spatial);
+    print_matrix(d_mean);
+    printf("Printing dvar with spatial %d \n", spatial);
+    print_matrix(d_var);
+    printf("Printing dbn with spatial %d \n", spatial);
+    print_matrix(d_bn);
+}
+
 void run_tests()
 {
     //make_matrix_test();
-    test_copy_matrix();
-    test_axpy_matrix();
-    test_transpose_matrix();
-    test_matmul();
-    test_activate_matrix();
-    test_gradient_matrix();
-    test_connected_layer();
+    // test_copy_matrix();
+    // test_axpy_matrix();
+    // test_transpose_matrix();
+    // test_matmul();
+    // test_activate_matrix();
+    // test_gradient_matrix();
+    // test_connected_layer();
+    bn_forward();
     //test_matrix_speed();
     printf("%d tests, %d passed, %d failed\n", tests_total, tests_total-tests_fail, tests_fail);
 }
