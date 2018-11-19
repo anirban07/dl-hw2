@@ -20,7 +20,7 @@ print
 
 print("making model...")
 batch = 128
-iters = 1000
+iters = 500
 rate = .01
 momentum = .9
 decay = .005

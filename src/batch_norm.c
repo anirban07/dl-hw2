@@ -96,7 +96,7 @@ matrix delta_mean(matrix d, matrix variance, int spatial)
         }
     }
     for (i = 0; i < dm.cols; i++) {
-        dm.data[i] *= -1 / sqrtf(variance.data[i] + FLT_EPSILON);
+        dm.data[i] *= -1.0 / sqrtf(variance.data[i] + FLT_EPSILON);
     }
 
     return dm;
@@ -132,8 +132,8 @@ matrix delta_batch_norm(matrix d, matrix dm, matrix dv, matrix mean, matrix vari
             for (j = 0; j < spatial; j++) {
                 int curr_idx = i * x.cols + chan * spatial + j;
                 dx.data[curr_idx] = (d.data[curr_idx] / sqrtf(curr_variance + FLT_EPSILON)) +
-                                    (dv.data[chan] * (2 / x.rows / spatial) * (x.data[curr_idx] - curr_mean)) +
-                                    (dm.data[chan] * (1 / x.rows / spatial));
+                                    (dv.data[chan] * (2.0 / x.rows / spatial) * (x.data[curr_idx] - curr_mean)) +
+                                    (dm.data[chan] * (1.0 / x.rows / spatial));
             }
         } 
     }
